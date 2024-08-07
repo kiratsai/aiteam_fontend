@@ -1,0 +1,87 @@
+@import './base.css';
+
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  /* padding: 2rem; */
+  font-weight: normal;
+}
+
+a,
+.green {
+  text-decoration: none;
+  color: hsla(160, 100%, 37%, 1);
+  transition: 0.4s;
+  padding: 3px;
+}
+
+@media (hover: hover) {
+  a:hover {
+    background-color: hsla(160, 100%, 37%, 0.2);
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    display: flex;
+    place-items: center;
+  }
+
+  #app {
+    /* display: grid; */
+    grid-template-columns: 1fr 1fr;
+    padding: 0 2rem;
+  }
+}
+
+#btn-cirle {
+  position: relative;
+  overflow: hidden;
+  background: #42455a;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1rem;
+  color: #e0ffff;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 1;
+}
+
+#btn-cirle:active {
+  transform: scale(0.95);
+}
+
+#btn-cirle::before {
+  content: '';
+  position: absolute;
+  inset: -1px 30px;
+  background: #00c2cb;
+  transition: 500ms;
+  animation: rotate 4s linear infinite;
+  z-index: -1;
+}
+
+#btn-cirle:hover::before {
+  inset: -1px;
+}
+
+#btn::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #22232e;
+  z-index: -1;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
