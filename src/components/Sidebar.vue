@@ -235,14 +235,17 @@ export default {
 
 .sidebar .nav-item {
   opacity: 0;
+  visibility: hidden;
 }
 
 .sidebar.active .nav-item {
   opacity: 1;
+  visibility: visible;
 }
 
 .sidebar ut li .tooltip {
   position: absolute;
+  visibility: hidden;
   left: 125px;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -259,6 +262,7 @@ export default {
 
 .sidebar ut li:hover .tooltip {
   opacity: 1;
+  visibility: visible;
 }
 
 .sidebar.active ut li:hover .tooltip {

@@ -1,9 +1,171 @@
 <template>
-    <div class="about">
-      <h1>This is an about page</h1>
-    </div>
-  </template>
-  
-  <style>
+  <div id="app" class="container mt-4" style="padding-left: 110px;">
+    <h1 class="mb-4">Navigation Management</h1>
 
-  </style>
+    <form @submit.prevent="submitForm">
+      <div class="row mb-3">
+        <div class="col">
+          <input type="text" class="form-control" v-model="navigation.name" placeholder="Name" required>
+        </div>
+        <div class="col">
+          <input type="text" class="form-control" v-model="navigation.id" placeholder="ID" required>
+        </div>
+        <div class="col">
+          <input type="text" class="form-control" v-model="navigation.x" placeholder="X" required>
+        </div>
+        <div class="col">
+          <input type="text" class="form-control" v-model="navigation.y" placeholder="Y" required>
+        </div>
+        <div class="col">
+          <input type="text" class="form-control" v-model="navigation.z" placeholder="Z" required>
+        </div>
+      </div>
+      <div class="mb-3">
+        <button type="submit" class="btn btn-primary me-2">Submit</button>
+        <button type="button" class="btn btn-secondary me-2" @click="getAllNavigation">Get All Navigation</button>
+        <button type="button" class="btn btn-danger me-2" @click="clearAllNavigation">Clear All Navigation</button>
+      </div>
+    </form>
+
+    <h2 class="mt-4">All Navigation Data</h2>
+    <div v-for="(tableData, tableName) in groupedNavigationData" :key="tableName" class="mb-4">
+      <button @click="clearNavigationTable(tableName)" class="btn btn-warning btn-sm">Delete table</button>
+      <h3>{{ tableName }}</h3>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>X</th>
+            <th>Y</th>
+            <th>Z</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in tableData" :key="item.id">
+            <td>{{ item.id }}</td>
+            <td>{{ item.x }}</td>
+            <td>{{ item.y }}</td>
+            <td>{{ item.z }}</td>
+            <td>
+              <button @click="clearANavigation(tableName, item.id)" class="btn btn-warning btn-sm">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, computed, onMounted } from 'vue';
+
+export default {
+  name: 'NavigationManagement',
+  setup() {
+    const navigation = ref({ name: '', id: '', x: '', y: '', z: '' });
+    const allNavigationData = ref({});
+
+    const groupedNavigationData = computed(() => {
+      const grouped = {};
+      for (const [key, value] of Object.entries(allNavigationData.value)) {
+        const [name, id] = JSON.parse(key);
+        const [x, y, z] = JSON.parse(value);
+        if (!grouped[name]) {
+          grouped[name] = [];
+        }
+        grouped[name].push({ id, x, y, z });
+      }
+      return grouped;
+    });
+
+    const submitForm = async () => {
+      try {
+        const response = await fetch('/api/navigation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(navigation.value)
+        });
+        const result = await response.json();
+        console.log(result);
+        alert('Navigation data submitted successfully');
+        getAllNavigation();
+      } catch (error) {
+        console.error("Error submitting form:", error);
+        alert('Error submitting navigation data');
+      }
+    };
+
+    const getAllNavigation = async () => {
+      try {
+        const response = await fetch('/api/navigation/getAllNavigation');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        console.log("All navigation data:", data);
+        allNavigationData.value = data;
+      } catch (error) {
+        console.error("Error fetching navigation data:", error);
+        alert('Error fetching navigation data');
+      }
+    };
+
+    const clearAllNavigation = async () => {
+      try {
+        const response = await fetch('/api/navigation/cleanAllNavigation', { method: 'POST' });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        console.log(result.message);
+        alert("All navigation data has been cleared.");
+        getAllNavigation();
+      } catch (error) {
+        console.error("Error clearing all navigation:", error);
+        alert('Error clearing all navigation data');
+      }
+    };
+
+    const clearANavigation = async (name, id) => {
+      try {
+        const response = await fetch(`/api/navigation/cleanANavigation/${name}/${id}`, { method: 'POST' });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        console.log(result);
+        alert(`Navigation for ${name} with ID ${id} has been cleared.`);
+        getAllNavigation();
+      } catch (error) {
+        console.error("Error clearing specific navigation:", error);
+        alert('Error clearing specific navigation');
+      }
+    };
+
+    const clearNavigationTable = async (name) => {
+      try {
+        const response = await fetch(`/api/navigation/cleanNavigation/${name}`, { method: 'POST' });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        console.log(result);
+        alert(`Navigation table for ${name} has been cleared.`);
+        getAllNavigation();
+      } catch (error) {
+        console.error("Error clearing specific table navigation:", error);
+        alert('Error clearing specific table navigation');
+      }
+    };
+
+    onMounted(getAllNavigation);
+
+    return {
+      navigation,
+      groupedNavigationData,
+      submitForm,
+      getAllNavigation,
+      clearAllNavigation,
+      clearANavigation,
+      clearNavigationTable,
+    };
+  }
+};
+</script>
+
+<style scoped>
+/* You can add any component-specific styles here */
+</style>
