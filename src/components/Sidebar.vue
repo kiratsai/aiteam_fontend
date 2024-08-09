@@ -15,13 +15,13 @@ const logout = function () {
   router.push('/login');
 }
 
-const robot = function () {
-  router.push('/robot');
-}
+// const robot = function () {
+//   router.push('/robot');
+// }
 
-const config = function(){
-  router.push('/Configuration');
-}
+// const config = function(){
+//   router.push('/Configuration');
+// }
 
 
 const loadAsyncData = async () => {
@@ -66,21 +66,21 @@ onMounted(() => {
       </div>
       <ut>
         <li>
-          <a href="#" @click="robot">
+          <a href="/robot">
             <i class="bx bxs-grid-alt"></i>
             <span class="nav-item">robot</span>
           </a>
           <span class="tooltip">robot</span>
         </li>
         <li>
-          <a href="#" @click="config">
+          <a href="/Configuration">
               <i class="bx bxs-shopping-bag"></i>
               <span class="nav-item">Config</span>
           </a>
           <span class="tooltip">Config</span>
         </li>
         <li>
-          <a href="#">
+          <a href="/Navigation">
             <i class="bx bx-list-check"></i>
             <span class="nav-item"> navigation</span>
           </a>
