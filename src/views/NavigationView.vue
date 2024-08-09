@@ -9,7 +9,7 @@
             required>
         </div>
         <div class="col">
-          <input type="number" class="form-control" v-model="navigation.id" placeholder="ID" required>
+          <input type="number" class="form-control" v-model="navigation.id" @input="getId(value)" placeholder="ID" required>
         </div>
         <div class="col">
           <input type="text" class="form-control" v-model="navigation.x" placeholder="X" required>
@@ -24,6 +24,7 @@
       <div class="mb-3">
         <button type="submit" class="btn btn-primary me-2">Submit</button>
         <button type="button" class="btn btn-secondary me-2" @click="getAllNavigation">Get All Navigation</button>
+        <button type="button" class="btn btn-secondary me-2" @click="updateNavigation"> update Navigation </button>
         <button type="button" class="btn btn-danger me-2" @click="clearAllNavigation">Clear All Navigation</button>
         <button type="button" class="btn btn-primary me-2" @click="startPy">Start navigation Python</button>
         <button type="button" class="btn btn-warning me-2" @click="stopPy">Stop navigation Python</button>
@@ -94,7 +95,29 @@ export default {
     });
 
 
-    const submitForm = async () => {
+    const submitForm = () => {
+  const name = navigation.value.name;
+  const id = navigation.value.id;
+
+  console.log("Submitting form for name:", name, "and id:", id);
+
+  if (groupedNavigationData.value[name]) {
+    console.log("Table found. Searching for item with id:", id);
+    const existingItem = groupedNavigationData.value[name].find(item => item.id === id.toString());
+    
+    if (existingItem) {
+      console.log("Item exists:", existingItem);
+      alert("Item already exists!");
+    } else {
+      console.log("Item does not exist. Submitting...");
+      submit();
+    }
+  } else {
+    console.log("Table does not exist. Submitting...");
+    submit();
+  }
+};
+    const submit = async () => {
       try {
         const response = await fetch('/api/navigation', {
           method: 'POST',
@@ -109,12 +132,12 @@ export default {
         const IdPlus = parseInt(navigation.value.id);
         navigation.value.id = (IdPlus + 1).toString();
 
-        
+
       } catch (error) {
         console.error("Error submitting form:", error);
         alert('Error submitting navigation data');
       }
-    };
+    }
 
     const getAllNavigation = async () => {
       try {
@@ -171,8 +194,12 @@ export default {
       }
     };
 
+    const getId = async () => {
+      console.log("Name entered id:", navigation.value.id);
+    }
+
     const getName = async () => {
-      console.log("Name entered:", navigation.value.name);
+      console.log("Name entered name:", navigation.value.name);
       const name = navigation.value.name
       // console.log("Grouped data:", groupedNavigationData.value);
 
@@ -235,6 +262,46 @@ export default {
       }
     };
 
+    const updateNavigation = async () => {
+      const name = navigation.value.name;
+      const id = navigation.value.id;
+
+      if (groupedNavigationData.value[name]) {
+        const existingItem = groupedNavigationData.value[name].find(item => item.id === id);
+
+        if (existingItem) {
+          console.log("Item exists. Updating...");
+          clearANavigation(name, id);
+          submitForm();
+          // try {
+          //   const response = await fetch('/api/navigation', {
+          //     method: 'PUT',
+          //     headers: { 'Content-Type': 'application/json' },
+          //     body: JSON.stringify(navigation.value)
+          //   });
+
+          //   if (!response.ok) {
+          //     throw new Error(`HTTP error! status: ${response.status}`);
+          //   }
+
+          //   const result = await response.json();
+          //   console.log("Update result:", result);
+          //   alert('Navigation data updated successfully');
+          //   await getAllNavigation();
+          // } catch (error) {
+          //   console.error("Error updating navigation:", error);
+          //   alert('Error updating navigation data');
+          // }
+        } else {
+          console.log("Item with this ID does not exist in this table");
+          alert('No item found with this ID in the specified table');
+        }
+      } else {
+        console.log("Table does not exist");
+        alert('No table found with this name');
+      }
+    };
+
     onMounted(() => {
       getAllNavigation();
     });
@@ -249,6 +316,7 @@ export default {
       navigation,
       groupedNavigationData,
       submitForm,
+      submit,
       getAllNavigation,
       clearAllNavigation,
       clearANavigation,
@@ -256,8 +324,9 @@ export default {
       getName,
       startPy,
       stopPy,
+      updateNavigation,
+      getId
     };
   }
 };
 </script>
-
