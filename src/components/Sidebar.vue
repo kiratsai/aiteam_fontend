@@ -1,3 +1,4 @@
+
 <script setup>
 import { onMounted, ref } from "vue";
 import { jwtDecode } from "jwt-decode";
@@ -130,6 +131,7 @@ export default {
 .user-img {
   width: 50px;
   border-radius: 100%;
+  visibility: visible;
   border: 1px solid #eee;
   background-color: #fff;
 }
@@ -182,25 +184,29 @@ export default {
 .user {
   display: flex;
   align-items: center;
+  visibility: hidden;
   margin-top: 2rem;
 }
 
 .user p {
   color: #fff;
   opacity: 1;
+  visibility: visible;
   margin-left: 1rem;
 }
 
 .bold {
-  font-weight: 600;
+  /* font-weight: 600; */
 }
 
 .sidebar p {
   opacity: 0;
+  visibility: hidden;
 }
 
 .sidebar.active p {
   opacity: 1;
+  visibility: visible;
 }
 
 .sidebar ut li {

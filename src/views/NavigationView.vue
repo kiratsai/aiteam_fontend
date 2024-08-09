@@ -5,10 +5,11 @@
     <form @submit.prevent="submitForm">
       <div class="row mb-3">
         <div class="col">
-          <input type="text" class="form-control" v-model="navigation.name" placeholder="Name" required>
+          <input type="text" class="form-control" v-model="navigation.name" @input="getName(value)" placeholder="Name"
+            required>
         </div>
         <div class="col">
-          <input type="text" class="form-control" v-model="navigation.id" placeholder="ID" required>
+          <input type="number" class="form-control" v-model="navigation.id" placeholder="ID" required>
         </div>
         <div class="col">
           <input type="text" class="form-control" v-model="navigation.x" placeholder="X" required>
@@ -24,6 +25,8 @@
         <button type="submit" class="btn btn-primary me-2">Submit</button>
         <button type="button" class="btn btn-secondary me-2" @click="getAllNavigation">Get All Navigation</button>
         <button type="button" class="btn btn-danger me-2" @click="clearAllNavigation">Clear All Navigation</button>
+        <button type="button" class="btn btn-primary me-2" @click="startPy">Start navigation Python</button>
+        <button type="button" class="btn btn-warning me-2" @click="stopPy">Stop navigation Python</button>
       </div>
     </form>
 
@@ -58,13 +61,15 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 export default {
   name: 'NavigationManagement',
   setup() {
     const navigation = ref({ name: '', id: '', x: '', y: '', z: '' });
     const allNavigationData = ref({});
+    let eventSource = null;
+
 
     const groupedNavigationData = computed(() => {
       const grouped = {};
@@ -76,8 +81,18 @@ export default {
         }
         grouped[name].push({ id, x, y, z });
       }
+
+      // Sort each group by ID
+      for (const name in grouped) {
+        grouped[name].sort((a, b) => {
+          // Assuming ID is a string that can be converted to a number
+          return parseInt(a.id) - parseInt(b.id);
+        });
+      }
+
       return grouped;
     });
+
 
     const submitForm = async () => {
       try {
@@ -88,8 +103,13 @@ export default {
         });
         const result = await response.json();
         console.log(result);
-        alert('Navigation data submitted successfully');
-        getAllNavigation();
+        await getAllNavigation();
+        alert('Navigation data submitted successfully \n' + result);
+
+        const IdPlus = parseInt(navigation.value.id);
+        navigation.value.id = (IdPlus + 1).toString();
+
+        
       } catch (error) {
         console.error("Error submitting form:", error);
         alert('Error submitting navigation data');
@@ -151,7 +171,79 @@ export default {
       }
     };
 
-    onMounted(getAllNavigation);
+    const getName = async () => {
+      console.log("Name entered:", navigation.value.name);
+      const name = navigation.value.name
+      // console.log("Grouped data:", groupedNavigationData.value);
+
+      if (groupedNavigationData.value[name]) {
+        console.log("data:", groupedNavigationData.value[name]);
+
+        // method one count length + 1
+        const datalength = groupedNavigationData.value[name].map(item => item.id).length;
+        console.log("data length:", datalength + 1);
+
+        // method tow count Math.max number
+        const maxId = Math.max(...groupedNavigationData.value[name].map(item => parseInt(item.id)));
+        navigation.value.id = (maxId + 1).toString();
+
+      } else {
+        console.log("No existing data for this name");
+        // If no existing data, start with ID 1
+        navigation.value.id = "1";
+      }
+    }
+
+    const startPy = () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      eventSource = new EventSource('/api/python/stream-data/start');
+      eventSource.addEventListener('streaming', (event) => {
+        try {
+          const jsonData = JSON.parse(event.data);
+          console.log('Received data:', jsonData);
+
+          navigation.value.x = jsonData.x || '';
+          navigation.value.y = jsonData.y || '';
+          navigation.value.z = jsonData.z || '';
+
+          console.log('Updated navigation:', navigation.value);
+        } catch (error) {
+          console.error('Error parsing or processing JSON:', error);
+          console.log('Raw event data:', event.data);
+        }
+      });
+    };
+
+    const stopPy = async () => {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+      try {
+        const response = await fetch('/api/python/stream-data/stop');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const result = await response.text();
+        console.log(result);
+        alert('Python script stopped successfully');
+      } catch (error) {
+        console.error("Error stopping Python script:", error);
+        alert('Error stopping Python script');
+      }
+    };
+
+    onMounted(() => {
+      getAllNavigation();
+    });
+
+    onUnmounted(() => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    });
 
     return {
       navigation,
@@ -161,11 +253,11 @@ export default {
       clearAllNavigation,
       clearANavigation,
       clearNavigationTable,
+      getName,
+      startPy,
+      stopPy,
     };
   }
 };
 </script>
 
-<style scoped>
-/* You can add any component-specific styles here */
-</style>
