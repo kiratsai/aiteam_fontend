@@ -1,7 +1,69 @@
 <template>
   <div id="app" class="container mt-4" style="padding-left: 110px;">
-    <h1 class="mb-4">Navigation Management</h1>
+    <h1 class="mb-4">Floor Plan</h1>
+    
+    <div class="image-container" style="position: relative;">
+      <canvas 
+      ref="canvas"
+      style="display: none;"
+    ></canvas>
+    <img 
+      ref="floorPlan"
+      src="../image/GUI.jpg" 
+      style="cursor: crosshair"
+      @click="handleClick"
+      @mousemove="updateCoordinates"
+      @mouseleave="resetCoordinates"
+      @load="initializeCanvas"
+    >
+        <!-- Points -->
+        <div 
+          v-for="label in labels" 
+          :key="label.id"
+          class="coordinate-label"
+          :style="{
+            position: 'absolute',
+            left: label.x + 'px',
+            top: label.y + 'px',
+            background: '#ff0000',
+            color: 'white',
+            padding: '2px 6px',
+            borderRadius: '50%',
+            fontSize: '12px',
+            transform: 'translate(-50%, -50%)'
+          }"
+        >
+          {{ label.id }}
+        </div>
+        <!-- Lines connecting points -->
+        <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+          <line
+            v-for="(line, index) in lines"
+            :key="index"
+            :x1="line.x1"
+            :y1="line.y1"
+            :x2="line.x2"
+            :y2="line.y2"
+            stroke="blue"
+            stroke-width="2"
+          />
+          <!-- Angle labels -->
+          <text
+            v-for="angle in angles"
+            :key="angle.id"
+            :x="angle.x"
+            :y="angle.y"
+            fill="green"
+            font-size="12"
+          >
+            {{ angle.value }}°
+          </text>
+        </svg>
+      </div>
+      <div>X: {{ coordinates.x }}, Y: {{ coordinates.y }}</div>
 
+  
+    <h1 class="mb-4">Navigation Management</h1>
     <form @submit.prevent="submitForm">
       <div class="row mb-3">
         <div class="col">
@@ -63,13 +125,137 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-
 export default {
   name: 'NavigationManagement',
   setup() {
     const navigation = ref({ name: '', id: '', x: '', y: '', z: '' });
     const allNavigationData = ref({});
     let eventSource = null;
+    const coordinates = ref({ x: 0, y: 0 });
+    const labels = ref([]);
+    const lines = ref([]);
+    const angles = ref([]);
+    let labelCounter = 1;
+    const canvas = ref(null);
+    const floorPlan = ref(null);
+    const ctx = ref(null);
+
+    const initializeCanvas = () => {
+      const img = floorPlan.value;
+      const canvasEl = canvas.value;
+      
+      canvasEl.width = img.naturalWidth;
+      canvasEl.height = img.naturalHeight;
+      
+      ctx.value = canvasEl.getContext('2d');
+      ctx.value.drawImage(img, 0, 0);
+    };
+
+    const isWhitePixel = (x, y) => {
+      if (!ctx.value) return false;
+      
+      const pixel = ctx.value.getImageData(x, y, 1, 1).data;
+      // Check if pixel is close to white (allowing some tolerance)
+      const tolerance = 200; // Adjust this value as needed
+      return pixel[0] >= tolerance && pixel[1] >= tolerance && pixel[2] >= tolerance;
+    };
+
+    const handleClick = (event) => {
+      const rect = event.target.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      // Scale coordinates to match original image dimensions
+      const scaleX = floorPlan.value.naturalWidth / rect.width;
+      const scaleY = floorPlan.value.naturalHeight / rect.height;
+      const originalX = Math.round(x * scaleX);
+      const originalY = Math.round(y * scaleY);
+
+      if (isWhitePixel(originalX, originalY)) {
+        addLabel(event);
+      }
+    };
+
+    const calculateAngle = (x1, y1, x2, y2) => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    // Calculate angle from positive y-axis (12 o'clock)
+    let angle = Math.atan2(dx, -dy) * (180 / Math.PI);
+    // Normalize angle to 0-360 degrees
+    angle = (angle + 360) % 360;
+    return Math.round(angle);
+};
+
+    const calculateDistance = (x1, y1, x2, y2) => {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      return Math.round(Math.sqrt(dx * dx + dy * dy));
+    };
+
+  const addLabel = (event) => {
+  const rect = event.target.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  
+  // Store the current point
+  labels.value.push({
+    id: labelCounter++,
+    x: x,
+    y: y,
+  });
+
+  // If there's a previous point, use its coordinates for the input boxes
+  if (labels.value.length >= 2) {
+    const prevPoint = labels.value[labels.value.length - 2];
+    navigation.value.x = Math.round(prevPoint.x).toString();
+    navigation.value.y = Math.round(prevPoint.y).toString();
+
+    // Calculate and update line
+    const currentPoint = labels.value[labels.value.length - 1];
+    lines.value.push({
+      x1: prevPoint.x,
+      y1: prevPoint.y,
+      x2: currentPoint.x,
+      y2: currentPoint.y
+    });
+
+    // Calculate angle and update z value
+    const angle = calculateAngle(prevPoint.x, prevPoint.y, currentPoint.x, currentPoint.y);
+    const distance = calculateDistance(prevPoint.x, prevPoint.y, currentPoint.x, currentPoint.y);
+    
+    navigation.value.z = angle.toString();
+
+    angles.value.push({
+      id: angles.value.length + 1,
+      fromPoint: prevPoint.id,
+      toPoint: currentPoint.id,
+      value: angle,
+      distance: distance,
+      x: (prevPoint.x + currentPoint.x) / 2,
+      y: (prevPoint.y + currentPoint.y) / 2 - 10
+    });
+  } else {
+    // For the first point, use its own coordinates
+    navigation.value.x = Math.round(x).toString();
+    navigation.value.y = Math.round(y).toString();
+    navigation.value.z = '0';
+  }
+};
+      // Add the coordinates methods
+   const updateCoordinates = (event) => {
+      const rect = event.target.getBoundingClientRect();
+      coordinates.value = {
+        x: Math.round(event.clientX - rect.left),
+        y: Math.round(event.clientY - rect.top)
+      };
+    };
+
+    const resetCoordinates = () => {
+      coordinates.value = {
+        x: 0,
+        y: 0
+      }
+    };
 
 
     const groupedNavigationData = computed(() => {
@@ -313,8 +499,19 @@ export default {
     });
 
     return {
+      canvas,
+      floorPlan,
+      handleClick,
+      initializeCanvas,
       navigation,
+      coordinates,
+      labels,
+      lines,
+      angles,
       groupedNavigationData,
+      updateCoordinates,
+      resetCoordinates,
+      addLabel,
       submitForm,
       submit,
       getAllNavigation,
@@ -330,3 +527,17 @@ export default {
   }
 };
 </script>
+
+
+<style scoped>
+.image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.coordinate-label {
+  position: absolute;
+  user-select: none;
+  pointer-events: none;
+}
+</style>
