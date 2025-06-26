@@ -137,14 +137,15 @@ export default {
 }
 
 .sidebar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  width: 80px;
-  background-color: #12171e;
-  padding: 0.4rem 0.8rem;
-  transition: all 0.5s ease;
+    position: fixed; /* Changed from absolute to fixed */
+    top: 0;
+    left: 0;
+    height: 100vh; /* Changed from 100% to 100vh */
+    width: 80px;
+    background-color: #12171e;
+    padding: 0.4rem 0.8rem;
+    transition: all 0.5s ease;
+    z-index: 1000; /* Added z-index */
 }
 
 .sidebar.active~.main-content {
